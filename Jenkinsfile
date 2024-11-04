@@ -13,7 +13,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'git@github.com:ZaninaAhlem/DevOpsServer.git',
+                    url: 'git@github.com:ZaninaAhlem/DevOps.git',
                     credentialsId: '012799'
             }
         }
