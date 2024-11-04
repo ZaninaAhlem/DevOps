@@ -28,9 +28,9 @@ pipeline {
             }
         }
 
-        stage('Build Client Image') {
+        stage('Build Web App Image') {
             steps {
-                dir('client') {
+                dir('web-app') {
                     script {
                         dockerImageClient = docker.build("${IMAGE_NAME_CLIENT}")
                     }
