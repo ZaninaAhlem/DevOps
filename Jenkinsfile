@@ -1,51 +1,79 @@
 pipeline {
-    environment {
-        registryCredential = 'dockerhub'
-        IMAGE_NAME = 'zaninaahlem/frontapp'
-        PUSH_SUCCESS = 'false'  
-    }
     agent any
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub') 
+        IMAGE_NAME_SERVER = 'zaninaahlem/server' 
+        IMAGE_NAME_CLIENT = 'zaninaahlem/web-app' 
+    }
+    
     stages {
-        stage('Cloning Git') {
+        stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main',
+                    url: 'git@github.com:ZaninaAhlem/DevOpsServer.git',
+                    credentialsId: 'gitlab_jenkins_key'
             }
         }
-        stage('Building image') {
+
+        stage('Build Server Image') {
             steps {
-                script {
-                    docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}", "--platform linux/amd64 .")
-                }
-            }
-        }
-        stage('Vulnerability Scan') {
-            steps {
-                script {
-                    sh "trivy image --severity HIGH,CRITICAL ${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                }
-            }
-        }
-        stage('Deploy Image') {
-            steps {
-                script {
-                    try {
-                        docker.withRegistry('', registryCredential) {
-                            docker.image("${IMAGE_NAME}:${env.BUILD_NUMBER}").push()
-                            // Set the environment variable
-                            sh "echo 'true' > .push_success"
-                        }
-                    } catch (Exception e) {
-                        echo "Image push failed: ${e.getMessage()}"
-                        sh "echo 'false' > .push_success"
-                        error("Failed to push image to registry")
+                dir('server') {
+                    script {
+                        dockerImageServer = docker.build("${IMAGE_NAME_SERVER}")
                     }
                 }
             }
         }
-    }
-    post {
-        always {
-            cleanWs()
+
+        stage('Build Client Image') {
+            steps {
+                dir('client') {
+                    script {
+                        dockerImageClient = docker.build("${IMAGE_NAME_CLIENT}")
+                    }
+                }
+            }
+        }
+
+        stage('Scan Server Image') {
+            steps {
+                script {
+                    sh """
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \\
+                        aquasec/trivy:latest image --exit-code 0 --severity LOW,MEDIUM,HIGH,CRITICAL \\
+                        ${IMAGE_NAME_SERVER}
+                    """
+                }
+            }
+        }
+
+        stage('Scan Client Image') {
+            steps {
+                script {
+                    sh """
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \\
+                        aquasec/trivy:latest image --exit-code 0 --severity LOW,MEDIUM,HIGH,CRITICAL \\
+                        ${IMAGE_NAME_CLIENT}
+                    """
+                }
+            }
+        }
+        
+        stage('Push Images to Docker Hub') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_TOKEN')]) {
+                        sh '''
+                            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                            docker push ${IMAGE_NAME_SERVER}
+                            docker push ${IMAGE_NAME_CLIENT}
+                        '''
+                    }
+                }
+            }
         }
     }
 }
