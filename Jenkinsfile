@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        kubernetes {
-            defaultContainer 'jnlp'
-            yamlFile 'agentpod.yaml'
-        }
-    }
+    agent any
     triggers {
         pollSCM('H/5 * * * *')
     }
