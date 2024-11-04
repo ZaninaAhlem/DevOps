@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  front-deployment
+  labels:
+    app: books-app
+spec:
+  selector:
+    matchLabels:
+      app: books-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: books-app
+    spec:
+      containers:
+        - name: books-app}
+          image: "zaninaahlem/frontapp:1" 
+          ports:
+            - containerPort: 80
+          resources:
+            limits:
+              memory: 256Mi
+              cpu: '250m'
+            requests:
+              memory: 128Mi
+              cpu: '80m'
+

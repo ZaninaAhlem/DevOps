@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mern-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app:  mern-app
+  template:
+    metadata:
+      labels:
+        app: mern-app
+    spec:
+      containers:
+      - name: backenf
+        image: "zaninaahlem/api:1"
+        ports:
+        - containerPort: 8800
+        env:
+        - name: MONGO_DB_URI
+          value: "mongodb://$(MONGO_USERNAME):$(MONGO_PASSWORD)@mongodb:27017/$(MONGO_DATABASE)?authSource=admin"
+        envFrom:
+        - secretRef:
+            name: mongo-secret
