@@ -14,7 +14,7 @@ pipeline {
             steps {
                 git branch: 'main',
                     url: 'git@github.com:ZaninaAhlem/DevOpsServer.git',
-                    credentialsId: 'gitlab_jenkins_key'
+                    credentialsId: '012799'
             }
         }
 
