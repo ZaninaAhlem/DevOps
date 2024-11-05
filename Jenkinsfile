@@ -52,7 +52,7 @@ pipeline {
             }
         }
 
-        stage('Scan Client Image') {
+        stage('Scan Web App Image') {
             steps {
                 script {
                     retry(3) {
